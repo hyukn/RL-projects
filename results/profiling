@@ -1,0 +1,207 @@
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+    43                                               @classmethod
+    44                                               def solve(cls, state: GameState, depth, alpha, beta, player):
+    45                                                   if depth == 0 or state.is_terminal():
+    46                                                       return state.returns(player), None
+    47                                           
+    48                                                   if state.current_player() == player:
+    49                                                       max_eval = -float('inf')
+    50                                                       max_action = None
+    51                                                       # use heuristic method when the current phase is sew
+    52                                                       
+    53                                                       for action in state.legal_actions():
+    54                                                           state_new = copy.copy(state)
+    55                                                           state_new.do_apply_action(action)
+    56                                                           eval, _ = cls.solve(state_new, depth - 1, alpha, beta, player)
+    57                                                           alpha = max(alpha, eval)
+    58                                           
+    59                                                           if eval > max_eval:
+    60                                                               max_action = action
+    61                                                               max_eval = eval
+    62                                                           if beta <= alpha:
+    63                                                               break
+    64                                                       return max_eval, max_action
+    65                                                   else:
+    66                                                       min_eval = float('inf')
+    67                                                       for action in state.legal_actions():
+    68                                                           state_new = copy.copy(state)
+    69                                                           state_new.do_apply_action(action)
+    70                                                           eval, _ = cls.solve(state_new, depth - 1, alpha, beta, player)
+    71                                                           beta = min(beta, eval)
+    72                                                           if eval < min_eval:
+    73                                                               min_eval = eval
+    74                                           
+    75                                                           if beta <= alpha: 
+    76                                                               break
+    77                                           
+    78                                                       return min_eval, _
+
+Total time: 0 s
+File: /data/hyk/projects/rl/patchwork/patchwork_agent_bin.py
+Function: BL at line 22
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+    22                                               @classmethod
+    23                                               def BL(cls, board, patch: Patch):
+    24                                                   # TODO: use PatchAlterArry, reorder it
+    25                                                   id = patch.id
+    26                                                   # xstart = cls.BL_table.get(id, 0)
+    27                                                   xstart = 0
+    28                                                   # use BL heuristic method
+    29                                                   for x, y, t in product(range(xstart, SIZE), range(SIZE), range(patch.trans_num)):
+    30                                                       if (x, y, t) in PatchAlter[id]:
+    31                                                           if board & PatchAlter[id][(x, y, t)] == 0:
+    32                                                               # record the current x
+    33                                                               return np.array([PatchPlacement2idx[(id, x, y, t)]], dtype=np.object)
+
+Total time: 40.3497 s
+File: /data/hyk/projects/rl/patchwork/patchwork_agent_bin.py
+Function: pggr at line 76
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+    76                                               def pggr(self, board, pid):
+    77   1996759    1767157.0      0.9      4.4          if (board, pid) in self.memory:
+    78   1936567     936834.0      0.5      2.3              return self.memory[(board, pid)]
+    79                                           
+    80                                                   # TODO:
+    81     60192     456332.0      7.6      1.1          id_alter = IdArray != IdArray[pid]
+    82     60192    1246754.0     20.7      3.1          alters_other = PatchAlterArray[id_alter]
+    83     60192   10036080.0    166.7     24.9          s = board & alters_other        
+    84     60192    7934992.0    131.8     19.7          Bij = np.sum(PatchArea[id_alter][s == 0])
+    85                                               
+    86                                                   # # TODO: ignore Bij when equals 1 here
+    87                                                   # valid = alters_other[s == 0]
+    88                                                   # reduce = np.sum(valid)
+    89                                                   # Bij = np.sum(reduce[reduce != 1])
+    90                                           
+    91                                                   # calculate Bij_next
+    92     60192      67527.0      1.1      0.2          board_next = board + PatchAlterArray[pid]
+    93     60192   10049006.0    166.9     24.9          s_next = board_next & alters_other
+    94     60192    7695062.0    127.8     19.1          Bij_next = np.sum(PatchArea[id_alter][s_next == 0])
+    95     60192      55796.0      0.9      0.1          regret = Bij - Bij_next
+    96                                           
+    97     60192      82119.0      1.4      0.2          self.memory[(board, pid)] = regret
+    98     60192      22011.0      0.4      0.1          return regret
+
+Total time: 578.79 s
+File: /data/hyk/projects/rl/patchwork/patchwork_agent_bin.py
+Function: solve at line 105
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+   105                                               def solve(self, state: PatchworkState, depth, alpha, beta, player):
+   106   9948301    6471410.0      0.7      1.1          if depth == 0 or state.is_terminal():
+   107   9037588   46964650.0      5.2      8.1              return state.returns(player), None
+   108                                           
+   109    910713     492387.0      0.5      0.1          cur_player = state.cur_player
+   110                                                   # use heuristic method when the current phase is sew
+   111    910713     541105.0      0.6      0.1          if state.phase == 'sew':
+   112                                                       # check for legal actions
+   113    250885   24980013.0     99.6      4.3              placements = self.placer(cur_player.board, state.next_sew)
+   114    250885   50007189.0    199.3      8.6              regrets = self.evaluator(cur_player.board, placements)
+   115                                           
+   116                                                       # sort regrets ascending, and only choose the best two placements
+   117    250885    2085775.0      8.3      0.4              legal_actions = placements[np.argsort(regrets)[:3]]
+   118                                                   else:
+   119    659828   26423943.0     40.0      4.6              legal_actions = state.legal_actions()
+   120                                           
+   121    910713    1041996.0      1.1      0.2          if state.current_player() == player:
+   122    651144     646096.0      1.0      0.1              max_eval = -float('inf')
+   123    651144     338641.0      0.5      0.1              max_action = None
+   124                                                           
+   125    939980     591485.0      0.6      0.1              for action in legal_actions:
+   126    921605   20383431.0     22.1      3.5                  state_new = copy.copy(state)
+   127    921605   12201246.0     13.2      2.1                  state_new.do_apply_action(action)
+   128    921605     680141.0      0.7      0.1                  eval, _ = self.solve(state_new, depth - 1, alpha, beta, player)
+   129    921605    1466797.0      1.6      0.3                  alpha = max(alpha, eval)
+   130                                           
+   131    921605    1776996.0      1.9      0.3                  if eval > max_eval:
+   132    889233     455806.0      0.5      0.1                      max_action = action
+   133    889233     476692.0      0.5      0.1                      max_eval = eval
+   134    921605     537053.0      0.6      0.1                  if beta <= alpha:
+   135    632769     350357.0      0.6      0.1                      break
+   136                                                       
+   137    651144     336725.0      0.5      0.1              return max_eval, max_action
+   138                                                   else:
+   139    259569     297375.0      1.1      0.1              min_eval = float('inf')
+   140   9277731   16225352.0      1.7      2.8              for action in state.legal_actions():
+   141   9026663  193772110.0     21.5     33.5                  state_new = copy.copy(state)
+   142   9026663  131453611.0     14.6     22.7                  state_new.do_apply_action(action)
+   143   9026663    6361436.0      0.7      1.1                  eval, _ = self.solve(state_new, depth - 1, alpha, beta, player)
+   144   9026663    7299962.0      0.8      1.3                  beta = min(beta, eval)
+   145   9026663    5797293.0      0.6      1.0                  if eval < min_eval:
+   146    382163     225370.0      0.6      0.0                      min_eval = eval
+   147                                           
+   148   9026663   17963671.0      2.0      3.1                  if beta <= alpha: 
+   149      8501       6697.0      0.8      0.0                      break
+   150                                           
+   151    259569     137326.0      0.5      0.0              return min_eval, _
+
+Total time: 6.70245 s
+File: /data/hyk/projects/rl/patchwork/patchwork_game_bin.py
+Function: apply_choose_action at line 332
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+   332                                               def apply_choose_action(self, action):
+   333   1091014     863336.0      0.8     12.9          if action == (-1, -1):
+   334    448430     289818.0      0.6      4.3              move = self.opponent.cur_pos - self.cur_player.cur_pos + 1
+   335    448430     412104.0      0.9      6.1              self.cur_player.move_reward(move)
+   336    448430    1844849.0      4.1     27.5              self.move(move)
+   337                                                   else:
+   338    642584     305075.0      0.5      4.6              n, patch = action
+   339                                                       
+   340                                                       # choose this patch
+   341    642584     641148.0      1.0      9.6              self.cur_player.choose(patch)
+   342    642584     433958.0      0.7      6.5              post = self.post_node[n]
+   343    642584     337231.0      0.5      5.0              pre = self.pre_node[n]
+   344                                           
+   345                                                       # remove current patch from the queue
+   346    642584     396000.0      0.6      5.9              self.post_node[pre] = post
+   347    642584     317238.0      0.5      4.7              self.pre_node[post] = pre
+   348                                           
+   349    642584     291794.0      0.5      4.4              self.cur_node = post
+   350    642584     291886.0      0.5      4.4              self.next_sew = patch
+   351    642584     278010.0      0.4      4.1              self.phase = 'sew'
+
+Total time: 99.0236 s
+File: /data/hyk/projects/rl/patchwork/patchwork_game_bin.py
+Function: apply_sew_action at line 353
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+   353                                               def apply_sew_action(self, action):
+   354                                                   # action = start_point, patch
+   355                                                   # TODO: shape does not count at this moment
+   356   8857320    5059897.0      0.6      5.1          id = IdArray[action]
+   357                                           
+   358   8857320   48990331.0      5.5     49.5          self.cur_player.sew(id, action)
+   359   8857320   44973416.0      5.1     45.4          self.move(PatchLib[id].tc)
+
+Total time: 647.899 s
+File: patchwork_mm.py
+Function: main at line 18
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+    18                                           def main():
+    19         1         41.0     41.0      0.0      np.random.seed(0)
+    20         1         26.0     26.0      0.0      random.seed(0)
+    21                                           
+    22         1          1.0      1.0      0.0      rounds = 1
+    23         1          1.0      1.0      0.0      win = 0
+    24                                           
+    25         1          2.0      2.0      0.0      game = PatchworkGame()
+    26                                               # player0 = MMPlayer(depth=20, player=0)
+    27         1         10.0     10.0      0.0      player0 = PatchworkAgent(7, 0)
+    28         1          5.0      5.0      0.0      player1 = RandomPlayer()
+    29                                           
+    30         1          0.0      0.0      0.0      log_level = 0
+    31         2          6.0      3.0      0.0      for i in range(rounds):
+    32         1  647898455.0 647898455.0    100.0          DVP = game.play(player0, player1)
+    33         1          2.0      2.0      0.0          win = win + 1 if DVP > 0 else win
+    34         1         11.0     11.0      0.0          print(f'No. {i}, DVP = {DVP}')
+    35         1         22.0     22.0      0.0      print(f'winning ratio: {win / rounds}')
