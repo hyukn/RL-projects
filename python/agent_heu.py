@@ -100,5 +100,8 @@ class AgentHeu(object):
             
         return action
     
+def main():
+    pass
+
 if __name__ == "__main__":
-    pggr_test()
+    main()

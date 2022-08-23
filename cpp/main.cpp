@@ -32,7 +32,7 @@ void arena_parallel(int rounds) {
         // auto p0 = agent_random::Agent();
         // auto p1 = agent_random::Agent();
 
-        auto p0 = agent_mm::Agent(5, 0);
+        auto p0 = agent_mm::Agent(1, 0);
         auto p1 = agent_heu::Agent(1);    
 
         // auto p0 = agent_mm::Agent(4, 0);

@@ -117,7 +117,7 @@ public:
     inline string observe() const {
         string obs = "";
         obs += "id: " + to_string(id) + "\n";
-        obs += "board: " + to_string(board) + "\n";
+        obs += "board: " + board2string(board) + "\n";
         obs += "score " + to_string(score()) + "\n";
         obs += "future score " + to_string(future_score()) + "\n";
         obs += "cur_pos " + to_string(cur_pos) + "\n";
@@ -125,6 +125,18 @@ public:
         obs += "buttons: " + to_string(buttons) + "\n";
         obs += "area: " + to_string(area) + "\n";
         return obs;
+    }
+
+    inline std::string board2string(const place_t& b) const {
+        std::string s = "";
+        s += std::bitset<64>(uint64_t(b >> 64)).to_string();
+        s += std::bitset<64>(uint64_t(b)).to_string();
+        std::reverse(s.begin(), s.end());
+        std::string bs = "";
+        for (int i = 0; i < BOARD_SIZE; ++i) {
+            bs += s.substr(i * BOARD_SIZE, BOARD_SIZE) + "\n";
+        }
+        return bs;
     }
 
     inline int future_score() const {

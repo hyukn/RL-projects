@@ -1,5 +1,4 @@
-# Patchwork Board Game solver by Reinforcement Learning
-
+# Patchwork Board Game Solver
 ## Introductions
 
 ## Basic Rules

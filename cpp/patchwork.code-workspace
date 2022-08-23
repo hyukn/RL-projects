@@ -65,7 +65,18 @@
 			"typeindex": "cpp",
 			"typeinfo": "cpp",
 			"utility": "cpp",
-			"variant": "cpp"
+			"variant": "cpp",
+			"cstdarg": "cpp",
+			"algorithm": "cpp",
+			"iterator": "cpp",
+			"map": "cpp",
+			"memory_resource": "cpp",
+			"random": "cpp",
+			"set": "cpp",
+			"source_location": "cpp",
+			"string": "cpp",
+			"cinttypes": "cpp",
+			"valarray": "cpp"
 		}
 	}
 }
